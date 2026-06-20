@@ -3,6 +3,7 @@ import { onMounted } from 'vue';
 import MapView from './components/MapView.vue';
 import TerrainProfile from './components/TerrainProfile.vue';
 import FlightStats from './components/FlightStats.vue';
+import WaypointPanel from './components/WaypointPanel.vue';
 import { useDroneStore } from './store/drone';
 
 const store = useDroneStore();
@@ -76,6 +77,9 @@ function handlePlanRoute() {
             </label>
           </div>
         </div>
+
+        <!-- Waypoint detail editor -->
+        <WaypointPanel />
 
         <!-- Actions -->
         <div class="bg-slate-800 rounded-lg p-3 space-y-2">

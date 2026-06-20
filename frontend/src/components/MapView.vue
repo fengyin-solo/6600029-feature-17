@@ -54,24 +54,26 @@ function drawNoFlyZones() {
 function drawWaypoints() {
   if (!waypointLayer) return;
   waypointLayer.clearLayers();
+  const maxAlt = store.droneConfig.maxAltitude || 500;
   store.waypoints.forEach((wp, idx) => {
+    const isSelected = wp.id === store.selectedWaypointId;
+    const actionColor =
+      wp.action === 'hover' ? '#f59e0b' :
+      wp.action === 'photo' ? '#a855f7' :
+      wp.action === 'video' ? '#ec4899' : '#3b82f6';
+    const baseRadius = 6 + (Math.max(0, wp.altitude) / maxAlt) * 6;
     const marker = L.circleMarker([wp.lat, wp.lng], {
-      radius: 8,
-      color: '#3b82f6',
-      fillColor: '#60a5fa',
+      radius: isSelected ? baseRadius + 3 : baseRadius,
+      color: isSelected ? '#fbbf24' : actionColor,
+      fillColor: isSelected ? '#fde68a' : actionColor,
       fillOpacity: 0.9,
-      weight: 2,
+      weight: isSelected ? 4 : 2,
     });
-    marker.bindTooltip(`WP${idx + 1}`, { permanent: true, direction: 'top', className: 'wp-tooltip' });
-    marker.bindPopup(`
-      <div style="min-width:160px">
-        <b>Waypoint ${idx + 1}</b><br>
-        Altitude: ${wp.altitude}m<br>
-        Speed: ${wp.speed} m/s<br>
-        Action: ${wp.action}<br>
-        <button onclick="this.closest('.leaflet-popup').remove()" style="margin-top:4px;color:#ef4444">Remove</button>
-      </div>
-    `);
+    marker.bindTooltip(
+      `WP${idx + 1} · ${wp.altitude}m · ${wp.speed}m/s · ${wp.action}`,
+      { permanent: true, direction: 'top', className: 'wp-tooltip' }
+    );
+    marker.on('click', () => store.selectWaypoint(wp.id));
     marker.on('dragend', (e: any) => {
       const ll = e.target.getLatLng();
       store.updateWaypoint(wp.id, { lat: ll.lat, lng: ll.lng });
@@ -132,11 +134,12 @@ function drawSimDrone() {
   }
 }
 
-watch(() => store.waypoints.length, () => {
+watch(() => store.waypoints, () => {
   drawWaypoints();
   drawRoute();
-});
+}, { deep: true });
 
+watch(() => store.selectedWaypointId, drawWaypoints);
 watch(() => store.noFlyZones.length, drawNoFlyZones);
 watch(() => store.simProgress, drawSimDrone);
 

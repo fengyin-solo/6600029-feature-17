@@ -21,6 +21,7 @@ export const useDroneStore = defineStore('drone', () => {
   const isSimulating = ref(false);
   const simProgress = ref(0);
   const mapCenter = ref<[number, number]>([39.9, 116.4]);
+  const selectedWaypointId = ref<string | null>(null);
 
   const droneConfig = ref<DroneConfig>({
     maxAltitude: 500,
@@ -40,15 +41,26 @@ export const useDroneStore = defineStore('drone', () => {
   ) {
     const id = `wp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     waypoints.value.push({ id, lat, lng, altitude, speed, action });
+    selectedWaypointId.value = id;
+    updatePlan();
   }
 
   function removeWaypoint(id: string) {
     waypoints.value = waypoints.value.filter((w) => w.id !== id);
+    if (selectedWaypointId.value === id) selectedWaypointId.value = null;
+    updatePlan();
   }
 
   function updateWaypoint(id: string, updates: Partial<Waypoint>) {
     const wp = waypoints.value.find((w) => w.id === id);
-    if (wp) Object.assign(wp, updates);
+    if (wp) {
+      Object.assign(wp, updates);
+      updatePlan();
+    }
+  }
+
+  function selectWaypoint(id: string | null) {
+    selectedWaypointId.value = id;
   }
 
   function planRoute(start: [number, number], goal: [number, number]) {
@@ -68,6 +80,7 @@ export const useDroneStore = defineStore('drone', () => {
     waypoints.value = [];
     currentPlan.value = null;
     simProgress.value = 0;
+    selectedWaypointId.value = null;
   }
 
   function updatePlan() {
@@ -146,6 +159,14 @@ export const useDroneStore = defineStore('drone', () => {
     });
   });
 
+  const selectedWaypoint = computed<Waypoint | null>(
+    () => waypoints.value.find((w) => w.id === selectedWaypointId.value) ?? null
+  );
+
+  const selectedWaypointIndex = computed(() =>
+    waypoints.value.findIndex((w) => w.id === selectedWaypointId.value)
+  );
+
   return {
     waypoints,
     noFlyZones,
@@ -156,6 +177,9 @@ export const useDroneStore = defineStore('drone', () => {
     isSimulating,
     simProgress,
     mapCenter,
+    selectedWaypointId,
+    selectedWaypoint,
+    selectedWaypointIndex,
     totalDistance,
     estimatedTime,
     batteryPercent,
@@ -163,6 +187,7 @@ export const useDroneStore = defineStore('drone', () => {
     addWaypoint,
     removeWaypoint,
     updateWaypoint,
+    selectWaypoint,
     planRoute,
     clearRoute,
     simulateFlight,
